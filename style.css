@@ -1,0 +1,111 @@
+/* ===== CustomPlayerView ===== */
+
+#cpv-slots-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 8px;
+    padding: 4px 0;
+}
+
+.cpv-upload-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    width: 100px;
+    cursor: pointer;
+    border-radius: 10px;
+    padding: 6px;
+    transition: background 0.15s;
+}
+.cpv-upload-card:hover {
+    background: rgba(255,255,255,0.08);
+}
+
+/* Обёртка thumb + иконка */
+.cpv-thumb-wrap {
+    position: relative;
+    width: 90px;
+    height: 64px;
+    border-radius: 7px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.06);
+    border: 2px solid rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.cpv-upload-card.cpv-active .cpv-thumb-wrap {
+    border-color: #fff;
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.4);
+}
+
+/* Превью картинки */
+.cpv-thumb {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Иконка + в пустом слоте */
+.cpv-upload-icon {
+    font-size: 28px;
+    color: rgba(255,255,255,0.5);
+    line-height: 1;
+    z-index: 1;
+}
+.cpv-upload-card.cpv-has-image .cpv-upload-icon {
+    display: none;
+}
+
+/* Номер слота — в углу thumb */
+.cpv-slot-num {
+    display: none;
+}
+
+/* Подпись под карточкой */
+.cpv-upload-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.6);
+    text-align: center;
+    line-height: 1.2;
+    max-width: 90px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.cpv-upload-card.cpv-active .cpv-upload-label {
+    color: #fff;
+    font-weight: 600;
+}
+
+/* Кнопка удаления */
+.cpv-remove-btn {
+    display: none;
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    font-size: 10px;
+    cursor: pointer;
+    line-height: 18px;
+    text-align: center;
+    z-index: 10;
+}
+.cpv-upload-card:hover .cpv-remove-btn {
+    display: block;
+}
+.cpv-remove-btn:hover {
+    background: rgba(200,0,0,0.8);
+}

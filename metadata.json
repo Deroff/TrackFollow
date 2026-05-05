@@ -1,0 +1,24 @@
+{
+  "name": "TrackFollow",
+  "image": "logo.svg",
+  "banner": "banner.svg",
+  "libraryLogo": "",
+  "author": "Le_pexun",
+  "description": "Добавляет свой вид плеера — любая картинка (jpg/png) или GIF-анимация в качестве фона плеера",
+  "version": "1.0.0",
+  "css": "style.css",
+  "script": "script.js",
+  "type": "script",
+  "tags": [
+    "Player",
+    "Background",
+    "Script",
+    "GIF"
+  ],
+  "dependencies": [],
+  "conflictsWith": [],
+  "allowedUrls": [],
+  "supportedVersions": [],
+  "installSource": "local",
+  "id": "250ba1fb1c0829d6d7a9e561"
+}
