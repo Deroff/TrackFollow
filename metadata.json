@@ -4,7 +4,7 @@
   "banner": "banner.svg",
   "author": "Le_pexun",
   "description": "Добавляет изображение или GIF на прогресс-бар плеера - оно плавно следует за ползунком во время воспроизведения",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "css": "style.css",
   "script": "script.js",
   "type": "script",
