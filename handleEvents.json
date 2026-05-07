@@ -39,7 +39,7 @@
                 {
                     "id": "lerpSpeed",
                     "name": "Плавность движения",
-                    "description": "Чем меньше тем медленнее идёт за плеером и наоборот.  (Выше 10 лучше не делать)",
+                    "description": "Чем меньше тем медленнее идёт за плеером и наоборот. (Выше 10 лучше не делать)",
                     "type": "slider",
                     "min": 1,
                     "max": 100,
@@ -51,12 +51,33 @@
                     "id": "hideInFullscreen",
                     "name": "Скрывать в полноэкранном режиме",
                     "description": "Скрывает спрайт когда открыт полный экран трека.",
-                    "type": "slider",
-                    "min": 0,
-                    "max": 1,
-                    "step": 1,
-                    "value": 1,
-                    "defaultValue": 1
+                    "type": "button",
+                    "value": true,
+                    "defaultValue": true
+                },
+                {
+                    "id": "pauseGif",
+                    "name": "Пауза GIF при паузе музыки",
+                    "description": "Останавливает анимацию GIF когда музыка на паузе.",
+                    "type": "button",
+                    "value": true,
+                    "defaultValue": false
+                },
+                {
+                    "id": "mirrorStatic",
+                    "name": "Отзеркалить",
+                    "description": "Постоянно отзеркаливает спрайт по горизонтали.",
+                    "type": "button",
+                    "value": false,
+                    "defaultValue": false
+                },
+                {
+                    "id": "mirrorByDirection",
+                    "name": "Зеркалить по направлению",
+                    "description": "Спрайт отзеркаливается когда движется влево.",
+                    "type": "button",
+                    "value": false,
+                    "defaultValue": false
                 }
             ]
         }
