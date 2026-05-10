@@ -24,6 +24,22 @@
     background: rgba(255,255,255,0.08);
 }
 
+/* Карточка добавления нового слота */
+.cpv-add-card .cpv-thumb-wrap {
+    border-style: dashed;
+    border-color: rgba(255,255,255,0.25);
+}
+.cpv-add-card:hover .cpv-thumb-wrap {
+    border-color: rgba(255,255,255,0.5);
+}
+.cpv-add-card .cpv-upload-icon {
+    font-size: 32px;
+    color: rgba(255,255,255,0.4);
+}
+.cpv-add-card:hover .cpv-upload-icon {
+    color: rgba(255,255,255,0.7);
+}
+
 /* Обёртка thumb + иконка */
 .cpv-thumb-wrap {
     position: relative;
@@ -47,7 +63,7 @@
 .cpv-thumb {
     position: absolute;
     inset: 0;
-    background-size: cover;
+    background-size: contain;
     background-position: center;
     background-repeat: no-repeat;
 }
@@ -84,12 +100,10 @@
     font-weight: 600;
 }
 
-/* Кнопка удаления */
+/* Кнопки на карточке (очистка и удаление) */
 .cpv-remove-btn {
     display: none;
     position: absolute;
-    top: 3px;
-    right: 3px;
     width: 18px;
     height: 18px;
     padding: 0;
@@ -106,6 +120,139 @@
 .cpv-upload-card:hover .cpv-remove-btn {
     display: block;
 }
-.cpv-remove-btn:hover {
+
+/* ✕ очистить — правый верхний угол */
+.cpv-clear-btn {
+    top: 3px;
+    right: 3px;
+}
+.cpv-clear-btn:hover {
+    background: rgba(200,0,0,0.8);
+}
+
+/* 🗑 удалить слот — левый верхний угол */
+.cpv-delete-btn {
+    top: 3px;
+    left: 3px;
+    font-size: 9px;
+}
+.cpv-delete-btn:hover {
+    background: rgba(180,60,0,0.85);
+}
+
+/* ===== Секция паузы ===== */
+
+/* Разделитель между основным и паузой */
+.cpv-pause-divider {
+    width: 80px;
+    height: 1px;
+    background: rgba(255,255,255,0.12);
+    margin: 1px 0;
+    /* Скрыт по умолчанию — показывается только при pauseGif=true через data-атрибут на wrap */
+    display: none;
+}
+
+/* Обёртка паузной секции — скрыта по умолчанию */
+.cpv-pause-section {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+}
+
+/* Показываем секцию паузы только если:
+   1. на wrap есть data-pause-gif
+   2. слот заполнен (cpv-has-image) */
+#cpv-slots-wrap[data-pause-gif] .cpv-upload-card.cpv-has-image .cpv-pause-divider {
+    display: block;
+}
+#cpv-slots-wrap[data-pause-gif] .cpv-upload-card.cpv-has-image .cpv-pause-section {
+    display: flex;
+}
+
+/* thumb-wrap для паузы — чуть меньше основного */
+.cpv-pause-thumb-wrap {
+    position: relative;
+    width: 90px;
+    height: 54px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.04);
+    border: 2px dashed rgba(255,255,255,0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+.cpv-pause-thumb-wrap:hover {
+    border-color: rgba(255,255,255,0.45);
+    background: rgba(255,255,255,0.08);
+}
+/* Когда паузный загружен — сплошная рамка */
+.cpv-upload-card.cpv-has-pause .cpv-pause-thumb-wrap {
+    border-style: solid;
+    border-color: rgba(255,255,255,0.25);
+}
+
+/* Превью паузного спрайта */
+.cpv-pause-thumb {
+    position: absolute;
+    inset: 0;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Иконка ⏸ в пустом паузном слоте */
+.cpv-pause-icon {
+    font-size: 20px;
+    color: rgba(255,255,255,0.3);
+    line-height: 1;
+    z-index: 1;
+    pointer-events: none;
+}
+.cpv-upload-card.cpv-has-pause .cpv-pause-icon {
+    display: none;
+}
+
+/* Подпись под паузным превью */
+.cpv-pause-label {
+    font-size: 10px;
+    color: rgba(255,255,255,0.45);
+    text-align: center;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90px;
+}
+
+/* Кнопка ✕ очистить паузный спрайт */
+.cpv-pause-clear-btn {
+    display: none;
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.65);
+    color: #fff;
+    font-size: 9px;
+    cursor: pointer;
+    line-height: 16px;
+    text-align: center;
+    z-index: 10;
+    top: 2px;
+    right: 2px;
+}
+.cpv-pause-thumb-wrap:hover .cpv-pause-clear-btn,
+.cpv-upload-card:hover .cpv-pause-clear-btn {
+    display: block;
+}
+.cpv-pause-clear-btn:hover {
     background: rgba(200,0,0,0.8);
 }

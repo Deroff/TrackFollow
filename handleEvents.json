@@ -78,6 +78,14 @@
                     "type": "button",
                     "value": false,
                     "defaultValue": false
+                },
+                {
+                    "id": "randomizeOnTrackChange",
+                    "name": "Случайный спрайт при смене трека",
+                    "description": "При каждой смене трека автоматически выбирает случайный заполненный слот (не тот же что сейчас).",
+                    "type": "button",
+                    "value": false,
+                    "defaultValue": false
                 }
             ]
         }
