@@ -179,7 +179,6 @@
     let slideTimerId    = null;
     let switchInProgress = false;
 
-    // Флаг: пользователь начал закрывать Яндекс-фуллскрин (кнопка или Escape)
     let fsClosing = false;
     let fsClosingTimerId = null;
     function markFsClosing() {
@@ -189,7 +188,6 @@
         fsClosingTimerId = setTimeout(() => { fsClosing = false; }, 200);
     }
 
-    // Подписка на кнопку закрытия фуллскрина Яндекса
     let fsCloseBtnBound = null;
     function bindFsCloseButton() {
         const btn = document.querySelector(FS_CLOSE_BTN_SEL);
@@ -198,7 +196,6 @@
         btn.addEventListener('click', markFsClosing, { once: true });
     }
 
-    // Escape — capture:true чтобы сработать раньше Яндекса
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape' && hideInFullscreen && document.querySelector(FS_ROOT_SEL)) {
             markFsClosing();
@@ -235,11 +232,6 @@
     function setSx(el, dir) {
         if (!el) return;
         el.style.setProperty('--sx', String(getScaleX(dir)));
-    }
-
-    function initSpriteEl(el, dir) {
-        el.style.setProperty('--sx', String(getScaleX(dir)));
-        el.style.transform = BASE_TRANSFORM;
     }
 
     function runSlideIn() {
@@ -397,10 +389,8 @@
         });
     }
 
-    // a: нативный fullscreenchange
     document.addEventListener('fullscreenchange', syncVisibility);
 
-    // b: FS_ROOT_SEL пропал из DOM (MutationObserver — debounce через rAF)
     let visDebounceId = null;
     function schedSyncVisibility() {
         if (visDebounceId) return;
@@ -412,29 +402,75 @@
     new MutationObserver(schedSyncVisibility)
         .observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'data-scroll-locked'] });
 
-    function getTimecodeWrap() {
-        if (timecodeWrap && document.contains(timecodeWrap)) return timecodeWrap;
-        timecodeWrap = document.querySelector('[data-test-id="TIMECODE_WRAPPER"]');
-        return timecodeWrap;
-    }
-
-    function getPlayerBar() {
-        return document.querySelector('[class*="PlayerBar_root"]')
-            ?? document.querySelector('[class*="PlayerBar"]')
-            ?? document.querySelector('[data-test-id="PLAYER_BAR"]');
+    // Возвращает { mode, bar, progressEl }
+    // progressEl = VibePlayerBar_center (та часть полосы где рисуется прогресс)
+    function getBarInfo() {
+        // Старый бар
+        const tcWrap = document.querySelector('[data-test-id="TIMECODE_WRAPPER"]');
+        if (tcWrap) {
+            const bar = document.querySelector('[class*="PlayerBar_root"]')
+                ?? document.querySelector('[class*="PlayerBar"]')
+                ?? document.querySelector('[data-test-id="PLAYER_BAR"]');
+            if (bar) return { mode: 'timecode', wrap: tcWrap, bar };
+        }
+        // Новый бар — VibePlayerBar
+        const vibeBar = document.querySelector('[class*="VibePlayerBar_root"]');
+        if (vibeBar) {
+            // Полоска прогресса визуально рисуется под центральным блоком (center)
+            const progressEl = vibeBar.querySelector('[class*="VibePlayerBar_center"]')
+                ?? vibeBar.querySelector('[class*="VibePlayerBar_progress"]')
+                ?? vibeBar;
+            return { mode: 'vibe', bar: vibeBar, progressEl };
+        }
+        return null;
     }
 
     function calcTargetLeft() {
-        const wrap = getTimecodeWrap(), bar = getPlayerBar();
-        if (!wrap || !bar) return null;
-        const thumbPx = parseFloat(getComputedStyle(wrap).getPropertyValue('--thumb-position'));
-        if (isNaN(thumbPx)) return null;
-        return (wrap.getBoundingClientRect().left - bar.getBoundingClientRect().left) + thumbPx + offsetX;
+        const info = getBarInfo();
+        if (!info) return null;
+
+        if (info.mode === 'timecode') {
+            const thumbPx = parseFloat(getComputedStyle(info.wrap).getPropertyValue('--thumb-position'));
+            if (isNaN(thumbPx)) return null;
+            return (info.wrap.getBoundingClientRect().left - info.bar.getBoundingClientRect().left) + thumbPx + offsetX;
+        }
+
+        // vibe: --track-progress читаем с root, а позицию считаем от center
+        const raw = getComputedStyle(info.bar).getPropertyValue('--track-progress').trim();
+        const pct = parseFloat(raw);
+        if (isNaN(pct)) return null;
+
+        const barRect      = info.bar.getBoundingClientRect();
+        const centerRect   = info.progressEl.getBoundingClientRect();
+        const relLeft      = centerRect.left - barRect.left;
+        return relLeft + centerRect.width * (pct / 100) + offsetX;
     }
+
     function calcTop() {
-        const wrap = getTimecodeWrap(), bar = getPlayerBar();
-        if (!wrap || !bar) return null;
-        return (wrap.getBoundingClientRect().top - bar.getBoundingClientRect().top) - spriteSize / 2 + offsetY;
+        const info = getBarInfo();
+        if (!info) return null;
+
+        if (info.mode === 'timecode') {
+            return (info.wrap.getBoundingClientRect().top - info.bar.getBoundingClientRect().top) - spriteSize / 2 + offsetY;
+        }
+
+        // vibe: центрируем по высоте center
+        const barRect    = info.bar.getBoundingClientRect();
+        const centerRect = info.progressEl.getBoundingClientRect();
+        const relTop     = centerRect.top - barRect.top;
+        return relTop + centerRect.height / 2 - spriteSize / 2 + offsetY;
+    }
+
+    function getPlayerBar() {
+        const info = getBarInfo();
+        return info ? info.bar : null;
+    }
+
+    function getTimecodeWrap() {
+        if (timecodeWrap && document.contains(timecodeWrap)) return timecodeWrap;
+        const info = getBarInfo();
+        timecodeWrap = info ? (info.wrap ?? info.bar) : null;
+        return timecodeWrap;
     }
 
     function applyPos(el, left, top) {
@@ -533,9 +569,8 @@
     function mountSprite() {
         if (spriteEl && document.contains(spriteEl)) return;
         const src = getSrcForSlot(active);
-        if (!src || !getTimecodeWrap()) { unmountSprite(); return; }
         const bar = getPlayerBar();
-        if (!bar) return;
+        if (!src || !bar) { unmountSprite(); return; }
         if (getComputedStyle(bar).position === 'static') bar.style.position = 'relative';
 
         spriteEl = document.createElement('img');
@@ -578,6 +613,7 @@
         if (rafId)    { cancelAnimationFrame(rafId); rafId = null; }
         stopPlayPoll();
         currentLeft = null; targetLeft = null;
+        timecodeWrap = null;
     }
 
     function tickSprite() {
@@ -1061,7 +1097,6 @@
         mgr.onChange(s => applySettings(s));
     }
 
-    // c+d: кнопка закрытия и Escape — подписываемся при появлении кнопки в DOM
     new MutationObserver(() => {
         tryInjectCards();
         bindFsCloseButton();
