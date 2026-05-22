@@ -70,7 +70,6 @@
                 }
             });
             localStorage.removeItem(LS_OLD_KEY);
-            LOG('мигрировали слоты из cpv_slots');
         } catch (_) {}
     }
 
@@ -98,7 +97,6 @@
             return true;
         } catch (e) {
             if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
-                LOG(`слот ${i}: localStorage переполнен, файл не сохранён`);
                 alert(`[TrackFollow] Нет места для слота ${i + 1}.\nУдалите другие слоты или используйте более лёгкие GIF.`);
             } else {
                 LOG(`ошибка сохранения слота ${i}:`, e.name);
@@ -113,7 +111,6 @@
             return true;
         } catch (e) {
             if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
-                LOG(`пауза слот ${i}: localStorage переполнен`);
                 alert(`[TrackFollow] Нет места для паузного спрайта слота ${i + 1}.\nИспользуйте более лёгкое изображение.`);
             } else {
                 LOG(`ошибка сохранения паузного слота ${i}:`, e.name);
@@ -152,15 +149,30 @@
         setBlobCachePause(i, pauseSlots[i]);
     }
 
+    // Classic player settings
     let spriteSize             = 48;
     let offsetX                = 0;
     let offsetY                = 0;
+    // Vibe player settings
+    let vibeSpriteSize         = 48;
+    let vibeOffsetX            = 0;
+    let vibeOffsetY            = 0;
+
     let lerpSpeed              = 0.18;
     let hideInFullscreen       = true;
     let pauseGif               = false;
     let mirrorStatic           = false;
     let mirrorByDirection      = false;
     let randomizeOnTrackChange = false;
+
+    function isVibeMode() {
+        const info = getBarInfo();
+        return info ? info.mode === 'vibe' : false;
+    }
+
+    function getActiveSpriteSize() { return isVibeMode() ? vibeSpriteSize : spriteSize; }
+    function getActiveOffsetX()    { return isVibeMode() ? vibeOffsetX    : offsetX; }
+    function getActiveOffsetY()    { return isVibeMode() ? vibeOffsetY    : offsetY; }
 
     let spriteEl        = null;
     let canvasEl        = null;
@@ -236,10 +248,11 @@
 
     function runSlideIn() {
         if (!spriteEl) return;
+        const sz = getActiveSpriteSize();
         setSx(spriteEl, lastDirection);
         spriteEl.style.transition = 'none';
         spriteEl.style.opacity    = '0';
-        spriteEl.style.transform  = `translateX(-50%) translateX(-${spriteSize}px) scaleX(var(--sx))`;
+        spriteEl.style.transform  = `translateX(-50%) translateX(-${sz}px) scaleX(var(--sx))`;
         spriteEl.style.display    = '';
 
         requestAnimationFrame(() => {
@@ -271,7 +284,7 @@
             clone.id = 'cpv-sprite-slideout';
             clone.style.transition = `opacity ${SLIDE_DURATION}ms ease`;
             clone.style.willChange = 'opacity';
-            visibleEl.parentElement?.appendChild(clone);
+            document.body.appendChild(clone);
             slideOutEl = clone;
 
             requestAnimationFrame(() => {
@@ -323,10 +336,11 @@
 
     function runSlideInCanvas() {
         if (!canvasEl) return;
+        const sz = getActiveSpriteSize();
         setSx(canvasEl, lastDirection);
         canvasEl.style.transition = 'none';
         canvasEl.style.opacity    = '0';
-        canvasEl.style.transform  = `translateX(-50%) translateX(-${spriteSize}px) scaleX(var(--sx))`;
+        canvasEl.style.transform  = `translateX(-50%) translateX(-${sz}px) scaleX(var(--sx))`;
 
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
@@ -402,63 +416,64 @@
     new MutationObserver(schedSyncVisibility)
         .observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'data-scroll-locked'] });
 
-    // Возвращает { mode, bar, progressEl }
-    // progressEl = VibePlayerBar_center (та часть полосы где рисуется прогресс)
     function getBarInfo() {
-        // Старый бар
         const tcWrap = document.querySelector('[data-test-id="TIMECODE_WRAPPER"]');
         if (tcWrap) {
             const bar = document.querySelector('[class*="PlayerBar_root"]')
                 ?? document.querySelector('[class*="PlayerBar"]')
                 ?? document.querySelector('[data-test-id="PLAYER_BAR"]');
-            if (bar) return { mode: 'timecode', wrap: tcWrap, bar };
+            if (bar) return { mode: 'timecode', wrap: tcWrap, bar, cssRoot: bar };
         }
-        // Новый бар — VibePlayerBar
+
+        const vibeMeta = document.querySelector('[class*="VibePlayerbarMeta_root"]');
+        if (vibeMeta) {
+            const progressEl = vibeMeta.querySelector('[class*="VibePlayerbarMeta_center"]') ?? vibeMeta;
+            const bar = vibeMeta.closest('[class*="VibePlayerBar_root"]') ?? vibeMeta;
+            return { mode: 'vibe', bar, progressEl, cssRoot: vibeMeta };
+        }
+
         const vibeBar = document.querySelector('[class*="VibePlayerBar_root"]');
         if (vibeBar) {
-            // Полоска прогресса визуально рисуется под центральным блоком (center)
             const progressEl = vibeBar.querySelector('[class*="VibePlayerBar_center"]')
                 ?? vibeBar.querySelector('[class*="VibePlayerBar_progress"]')
                 ?? vibeBar;
-            return { mode: 'vibe', bar: vibeBar, progressEl };
+            return { mode: 'vibe', bar: vibeBar, progressEl, cssRoot: vibeBar };
         }
+
         return null;
     }
 
     function calcTargetLeft() {
         const info = getBarInfo();
         if (!info) return null;
+        const ox = getActiveOffsetX();
 
         if (info.mode === 'timecode') {
             const thumbPx = parseFloat(getComputedStyle(info.wrap).getPropertyValue('--thumb-position'));
             if (isNaN(thumbPx)) return null;
-            return (info.wrap.getBoundingClientRect().left - info.bar.getBoundingClientRect().left) + thumbPx + offsetX;
+            return info.wrap.getBoundingClientRect().left + thumbPx + ox;
         }
 
-        // vibe: --track-progress читаем с root, а позицию считаем от center
-        const raw = getComputedStyle(info.bar).getPropertyValue('--track-progress').trim();
+        const raw = getComputedStyle(info.cssRoot).getPropertyValue('--track-progress').trim();
         const pct = parseFloat(raw);
         if (isNaN(pct)) return null;
 
-        const barRect      = info.bar.getBoundingClientRect();
-        const centerRect   = info.progressEl.getBoundingClientRect();
-        const relLeft      = centerRect.left - barRect.left;
-        return relLeft + centerRect.width * (pct / 100) + offsetX;
+        const centerRect = info.progressEl.getBoundingClientRect();
+        return centerRect.left + centerRect.width * (pct / 100) + ox;
     }
 
     function calcTop() {
         const info = getBarInfo();
         if (!info) return null;
+        const sz = getActiveSpriteSize();
+        const oy = getActiveOffsetY();
 
         if (info.mode === 'timecode') {
-            return (info.wrap.getBoundingClientRect().top - info.bar.getBoundingClientRect().top) - spriteSize / 2 + offsetY;
+            return info.wrap.getBoundingClientRect().top - sz / 2 + oy;
         }
 
-        // vibe: центрируем по высоте center
-        const barRect    = info.bar.getBoundingClientRect();
         const centerRect = info.progressEl.getBoundingClientRect();
-        const relTop     = centerRect.top - barRect.top;
-        return relTop + centerRect.height / 2 - spriteSize / 2 + offsetY;
+        return centerRect.top + centerRect.height / 2 - sz / 2 + oy;
     }
 
     function getPlayerBar() {
@@ -484,17 +499,16 @@
 
     function freezeFrame() {
         if (!spriteEl || !canvasEl) return;
+        const sz = getActiveSpriteSize();
         spriteEl.style.display = '';
         const ctx = canvasEl.getContext('2d');
-        canvasEl.width  = spriteSize;
-        canvasEl.height = spriteSize;
-        ctx.drawImage(spriteEl, 0, 0, spriteSize, spriteSize);
+        canvasEl.width  = sz;
+        canvasEl.height = sz;
+        ctx.drawImage(spriteEl, 0, 0, sz, sz);
         spriteEl.style.display = 'none';
-        canvasEl.style.position   = spriteEl.style.position;
-        canvasEl.style.zIndex     = spriteEl.style.zIndex;
-        canvasEl.style.transform  = spriteEl.style.transform;
         canvasEl.style.left       = spriteEl.style.left;
         canvasEl.style.top        = spriteEl.style.top;
+        canvasEl.style.transform  = spriteEl.style.transform;
         canvasEl.style.setProperty('--sx', spriteEl.style.getPropertyValue('--sx') || '1');
         canvasEl.style.display    = '';
     }
@@ -551,7 +565,6 @@
             if (playing === wasPlaying) return;
             wasPlaying = playing;
             if (!pauseGif) return;
-
             if (switchInProgress) return;
 
             if (pauseSlots[active]) {
@@ -569,40 +582,37 @@
     function mountSprite() {
         if (spriteEl && document.contains(spriteEl)) return;
         const src = getSrcForSlot(active);
-        const bar = getPlayerBar();
-        if (!src || !bar) { unmountSprite(); return; }
-        if (getComputedStyle(bar).position === 'static') bar.style.position = 'relative';
+        if (!src || !getPlayerBar()) { unmountSprite(); return; }
+        const sz = getActiveSpriteSize();
 
         spriteEl = document.createElement('img');
         spriteEl.id  = 'cpv-sprite';
         spriteEl.src = src;
         Object.assign(spriteEl.style, {
-            width: spriteSize + 'px', height: spriteSize + 'px',
-            position: 'absolute',
+            width: sz + 'px', height: sz + 'px',
+            position: 'fixed',
             transform: BASE_TRANSFORM,
-            pointerEvents: 'none', zIndex: '9999',
+            pointerEvents: 'none', zIndex: '2147483647',
         });
         spriteEl.style.setProperty('--sx', String(getScaleX(lastDirection)));
 
         canvasEl = document.createElement('canvas');
         canvasEl.id = 'cpv-sprite-canvas';
         Object.assign(canvasEl.style, {
-            width: spriteSize + 'px', height: spriteSize + 'px',
-            position: 'absolute',
+            width: sz + 'px', height: sz + 'px',
+            position: 'fixed',
             transform: BASE_TRANSFORM,
-            pointerEvents: 'none', zIndex: '9999',
+            pointerEvents: 'none', zIndex: '2147483647',
             display: 'none',
         });
         canvasEl.style.setProperty('--sx', String(getScaleX(lastDirection)));
 
-        bar.appendChild(spriteEl);
-        bar.appendChild(canvasEl);
+        document.body.appendChild(spriteEl);
+        document.body.appendChild(canvasEl);
         LOG('спрайт вставлен');
 
-        if (pauseGif && !wasPlaying) {
-            if (!pauseSlots[active]) {
-                spriteEl.onload = () => { freezeFrame(); spriteEl.onload = null; };
-            }
+        if (pauseGif && !wasPlaying && !pauseSlots[active]) {
+            spriteEl.onload = () => { freezeFrame(); spriteEl.onload = null; };
         }
     }
 
@@ -636,6 +646,17 @@
 
         currentLeft += diff * lerpSpeed;
         const top = calcTop();
+        const sz  = getActiveSpriteSize();
+
+        // Update size in case mode switched (classic ↔ vibe)
+        if (spriteEl && spriteEl.style.width !== sz + 'px') {
+            spriteEl.style.width  = sz + 'px';
+            spriteEl.style.height = sz + 'px';
+        }
+        if (canvasEl && canvasEl.style.width !== sz + 'px') {
+            canvasEl.style.width  = sz + 'px';
+            canvasEl.style.height = sz + 'px';
+        }
 
         applyPos(spriteEl, currentLeft, top);
         if (canvasEl && canvasEl.style.display !== 'none')
@@ -675,13 +696,15 @@
         }
         tryMount();
     }
+
     function updateSpriteStyle() {
         if (!spriteEl) return;
-        spriteEl.style.width  = spriteSize + 'px';
-        spriteEl.style.height = spriteSize + 'px';
+        const sz = getActiveSpriteSize();
+        spriteEl.style.width  = sz + 'px';
+        spriteEl.style.height = sz + 'px';
         if (canvasEl) {
-            canvasEl.style.width  = spriteSize + 'px';
-            canvasEl.style.height = spriteSize + 'px';
+            canvasEl.style.width  = sz + 'px';
+            canvasEl.style.height = sz + 'px';
         }
     }
 
@@ -981,18 +1004,12 @@
             if (!file) return;
             if (file.size > 5 * 1024 * 1024) { alert('[TrackFollow] Файл слишком большой (макс. 5 МБ).'); return; }
             const currentIdx = parseInt(cardEl.dataset.cpvSlot, 10);
-            if (isNaN(currentIdx) || currentIdx < 0 || currentIdx >= slotsCount) {
-                LOG('открыт файл-пикер: слот уже не существует, запись отменена');
-                return;
-            }
+            if (isNaN(currentIdx) || currentIdx < 0 || currentIdx >= slotsCount) return;
             const reader = new FileReader();
             reader.onload = ev => {
                 const dataUrl = ev.target.result;
                 const finalIdx = parseInt(cardEl.dataset.cpvSlot, 10);
-                if (isNaN(finalIdx) || finalIdx < 0 || finalIdx >= slotsCount) {
-                    LOG('слот был сдвинут/удалён пока читался файл, запись отменена');
-                    return;
-                }
+                if (isNaN(finalIdx) || finalIdx < 0 || finalIdx >= slotsCount) return;
                 slots[finalIdx] = dataUrl;
                 const saved = saveSlot(finalIdx, dataUrl);
                 if (!saved) { slots[finalIdx] = null; return; }
@@ -1016,18 +1033,12 @@
             if (!file) return;
             if (file.size > 5 * 1024 * 1024) { alert('[TrackFollow] Файл слишком большой (макс. 5 МБ).'); return; }
             const currentIdx = parseInt(cardEl.dataset.cpvSlot, 10);
-            if (isNaN(currentIdx) || currentIdx < 0 || currentIdx >= slotsCount) {
-                LOG('паузный файл-пикер: слот не существует, запись отменена');
-                return;
-            }
+            if (isNaN(currentIdx) || currentIdx < 0 || currentIdx >= slotsCount) return;
             const reader = new FileReader();
             reader.onload = ev => {
                 const dataUrl = ev.target.result;
                 const finalIdx = parseInt(cardEl.dataset.cpvSlot, 10);
-                if (isNaN(finalIdx) || finalIdx < 0 || finalIdx >= slotsCount) {
-                    LOG('слот сдвинут/удалён пока читался паузный файл, запись отменена');
-                    return;
-                }
+                if (isNaN(finalIdx) || finalIdx < 0 || finalIdx >= slotsCount) return;
                 pauseSlots[finalIdx] = dataUrl;
                 const saved = savePauseSlot(finalIdx, dataUrl);
                 if (!saved) { pauseSlots[finalIdx] = null; return; }
@@ -1053,6 +1064,12 @@
         if (sz >= 1) spriteSize = sz;
         offsetX = parseInt(s?.offsetX?.value ?? 100, 10) - 100;
         offsetY = parseInt(s?.offsetY?.value ?? 100, 10) - 100;
+
+        const vsz = parseInt(s?.vibeSpriteSize?.value ?? sz, 10);
+        if (vsz >= 1) vibeSpriteSize = vsz;
+        vibeOffsetX = parseInt(s?.vibeOffsetX?.value ?? 100, 10) - 100;
+        vibeOffsetY = parseInt(s?.vibeOffsetY?.value ?? 100, 10) - 100;
+
         const ls = parseInt(s?.lerpSpeed?.value ?? 18, 10);
         lerpSpeed = Math.max(0.01, Math.min(1.0, ls / 100));
 
@@ -1083,6 +1100,7 @@
             setSx(canvasEl, lastDirection);
         }
     }
+
     function initSettings() {
         if (!window.pulsesyncApi) { setTimeout(initSettings, 300); return; }
         const mgr = window.pulsesyncApi.getSettings(ADDON);

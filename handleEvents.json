@@ -88,6 +88,44 @@
                     "defaultValue": false
                 }
             ]
+        },
+        {
+            "title": "Моя волна (Vibe)",
+            "items": [
+                {
+                    "id": "vibeSpriteSize",
+                    "name": "Размер (px)",
+                    "description": "Размер спрайта для плеера Моя волна. От 1 до 320",
+                    "type": "slider",
+                    "min": 1,
+                    "max": 320,
+                    "step": 1,
+                    "value": 120,
+                    "defaultValue": 70
+                },
+                {
+                    "id": "vibeOffsetX",
+                    "name": "Смещение X: лево/право",
+                    "description": "Меньше 100 - влево, больше 100 - вправо",
+                    "type": "slider",
+                    "min": 0,
+                    "max": 200,
+                    "step": 1,
+                    "value": 100,
+                    "defaultValue": 100
+                },
+                {
+                    "id": "vibeOffsetY",
+                    "name": "Смещение Y: вверх/вниз",
+                    "description": "Меньше 100 - вверх, больше 100 - вниз",
+                    "type": "slider",
+                    "min": 0,
+                    "max": 200,
+                    "step": 1,
+                    "value": 100,
+                    "defaultValue": 100
+                }
+            ]
         }
     ]
 }
