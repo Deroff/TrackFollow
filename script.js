@@ -10,6 +10,7 @@
     const MAX_SLOTS      = 12;
     const WRAP_ID        = 'cpv-slots-wrap';
     const NATIVE_BTN_SEL = '[class*="CustomPlayerThumbSelector_button"]';
+    const NATIVE_ROOT_SEL = '[class*="CustomPlayerThumbSelector_root"]';
     const FS_ROOT_SEL    = '[class*="FullscreenPlayerDesktopContent_root"]';
     const FS_CLOSE_BTN_SEL = '[data-test-id="FULLSCREEN_PLAYER_CLOSE_BUTTON"]';
     const LOG = (...a) => console.log('[TrackFollow]', ...a);
@@ -149,11 +150,9 @@
         setBlobCachePause(i, pauseSlots[i]);
     }
 
-    // Classic player settings
     let spriteSize             = 48;
     let offsetX                = 0;
     let offsetY                = 0;
-    // Vibe player settings
     let vibeSpriteSize         = 48;
     let vibeOffsetX            = 0;
     let vibeOffsetY            = 0;
@@ -587,6 +586,7 @@
 
         spriteEl = document.createElement('img');
         spriteEl.id  = 'cpv-sprite';
+        spriteEl.setAttribute('data-cpv', 'true');
         spriteEl.src = src;
         Object.assign(spriteEl.style, {
             width: sz + 'px', height: sz + 'px',
@@ -598,6 +598,7 @@
 
         canvasEl = document.createElement('canvas');
         canvasEl.id = 'cpv-sprite-canvas';
+        canvasEl.setAttribute('data-cpv', 'true');
         Object.assign(canvasEl.style, {
             width: sz + 'px', height: sz + 'px',
             position: 'fixed',
@@ -648,7 +649,6 @@
         const top = calcTop();
         const sz  = getActiveSpriteSize();
 
-        // Update size in case mode switched (classic ↔ vibe)
         if (spriteEl && spriteEl.style.width !== sz + 'px') {
             spriteEl.style.width  = sz + 'px';
             spriteEl.style.height = sz + 'px';
@@ -688,9 +688,15 @@
         if (window.pulsesyncApi) {
             wasPlaying = window.pulsesyncApi.isPlaying() ?? true;
         }
+        let mountAttempts = 0;
         function tryMount() {
             mountSprite();
-            if (!spriteEl) { setTimeout(tryMount, 300); return; }
+            if (!spriteEl) {
+                mountAttempts++;
+                const delay = mountAttempts < 10 ? 300 : 1000;
+                setTimeout(tryMount, delay);
+                return;
+            }
             schedTick();
             startPlayPoll();
         }
@@ -710,7 +716,8 @@
 
     function getNativeContainer() {
         const btn = document.querySelector(NATIVE_BTN_SEL);
-        return btn ? btn.parentElement : null;
+        if (btn) return btn.parentElement;
+        return document.querySelector(NATIVE_ROOT_SEL) ?? null;
     }
 
     function syncWrapWidth() {
@@ -971,23 +978,37 @@
         setTimeout(() => {
             injectScheduled = false;
             if (document.getElementById(WRAP_ID)) return;
+
+            // Ищем нативные кнопки или root CustomPlayerThumbSelector
             const btn = document.querySelector(NATIVE_BTN_SEL);
-            if (!btn) return;
-            const nativeContainer = btn.parentElement;
+            const nativeRoot = btn
+                ? (btn.closest(NATIVE_ROOT_SEL) ?? btn.parentElement)
+                : document.querySelector(NATIVE_ROOT_SEL);
+            if (!nativeRoot) return;
+
             const wrap = document.createElement('div');
             wrap.id = WRAP_ID;
-            const cs = getComputedStyle(nativeContainer);
-            const nativeWidth = nativeContainer.getBoundingClientRect().width;
+            const nativeWidth = nativeRoot.getBoundingClientRect().width;
             wrap.style.cssText = [
-                `display:${cs.display || 'flex'}`,
+                'display:flex',
+                'flex-direction:row',
                 'flex-wrap:wrap',
-                `gap:${cs.gap || '8px'}`,
+                'gap:8px',
                 'margin-bottom:8px',
                 nativeWidth > 0 ? `max-width:${nativeWidth}px` : '',
             ].filter(Boolean).join(';');
             for (let i = 0; i < slotsCount; i++) wrap.appendChild(createCard(i));
             wrap.appendChild(createAddCard());
-            nativeContainer.parentElement.insertBefore(wrap, nativeContainer);
+
+            // FIX 5.105.4: всегда вставляем wrap перед nativeRoot через его родителя.
+            // Это гарантирует правильную точку вставки без insertBefore-краша.
+            if (nativeRoot.parentElement) {
+                nativeRoot.parentElement.insertBefore(wrap, nativeRoot);
+            } else {
+                // nativeRoot ещё не в DOM — отступаем
+                return;
+            }
+
             syncPauseGifAttr();
             setTimeout(renderAllCards, 0);
             LOG('слоты вставлены');

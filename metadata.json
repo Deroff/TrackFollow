@@ -1,29 +1,29 @@
 {
-    "name": "TrackFollow",
-    "image": "logo.svg",
-    "banner": "banner.svg",
-    "libraryLogo": "logo.svg",
-    "author": "Le_pexun",
-    "description": "Добавляет изображение/GIF на прогресс-бар плеера",
-    "version": "1.3.0",
-    "css": "style.css",
-    "script": "script.js",
-    "type": "script",
-    "tags": [
-        "Player",
-        "Animation",
-        "Script",
-        "GIF"
-    ],
-    "dependencies": [],
-    "conflictsWith": [],
-    "allowedUrls": [],
-    "supportedVersions": [
-        "5.97.3"
-    ],
-    "id": "196ae173-6800-48e1-bf3a-8540f671ef20",
-    "fromPext": true,
-    "installSource": "store",
-    "storeAddonId": "196ae173-6800-48e1-bf3a-8540f671ef20",
-    "packageHash": "732b8cfd4a149482d60a8283680c3e17e8bd6344678dfd493e15e9c59e8e0de5"
+  "name": "TrackFollow",
+  "image": "logo.svg",
+  "banner": "banner.svg",
+  "libraryLogo": "logo.svg",
+  "author": "Le_pexun",
+  "description": "Добавляет изображение/GIF на прогресс-бар плеера",
+  "version": "1.3.1",
+  "css": "style.css",
+  "script": "script.js",
+  "type": "script",
+  "tags": [
+    "Player",
+    "Animation",
+    "Script",
+    "GIF"
+  ],
+  "dependencies": [],
+  "conflictsWith": [],
+  "allowedUrls": [],
+  "supportedVersions": [
+    "5.97.3"
+  ],
+  "id": "196ae173-6800-48e1-bf3a-8540f671ef20",
+  "fromPext": true,
+  "installSource": "store",
+  "storeAddonId": "196ae173-6800-48e1-bf3a-8540f671ef20",
+  "packageHash": "732b8cfd4a149482d60a8283680c3e17e8bd6344678dfd493e15e9c59e8e0de5"
 }
